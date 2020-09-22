@@ -4,7 +4,7 @@
 #include <psp2kern/kernel/sysmem.h> 
 #include <string.h>
 #include <stdarg.h>
-#include <vitasdkkern.h>
+#include <dolcesdkkern.h>
 #include <stdlib.h>
 #include <psp2/appmgr.h> 
 
