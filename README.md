@@ -6,6 +6,7 @@ A plugin that keeps track of how long you played your games, and an app to show 
 - As it's rewritten as a kernel plugin, the files that record the playtime won't ever get corrupted.
 - It only writes to file when you close/launch or suspend/resume the games so it doesn't murder your memory card, unlike the old one.
 - Complete support for Adrenaline and Adrenaline Bubbles.
+- You can add apps/games you selected to a blacklist (located at ux0:/data/TrackPlug/blacklist.txt)
 - The app works at 60FPS instead of 30FPS.
 
 # How do I install this?
@@ -17,8 +18,9 @@ ur0:tai/BetterTrackPlug.skprx
 install the vpk.
 Reboot.
 
-# Features To Be Added
-- Blacklist support so you don't have to see how much time you've spent on VitaShell.
+# How do I use this?
+- UP/DOWN to navigate.
+- Triangle to prompt clearing playtime of the selected record, asks if you want to blacklist if you do clear the playtime.
 
 # Notes
 ![Bubbles](https://i.imgur.com/qZwPMXU.png)
