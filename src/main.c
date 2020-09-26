@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <taihen.h>
-#include <psp2/io/fcntl.h> 
-#include <psp2kern/kernel/sysmem.h> 
+#include <psp2kern/kernel/sysmem.h>
+#include <psp2kern/kernel/modulemgr.h>
+#include <psp2kern/kernel/iofilemgr.h>
 #include <string.h>
-#include <stdarg.h>
-#include <dolcesdkkern.h>
-#include <stdlib.h>
-#include <psp2/appmgr.h> 
 
 #define printf ksceDebugPrintf
 #define SECOND        1000000
@@ -97,7 +94,7 @@ static void adrenaline_titlewriter(char *dummy_id,char *dummy_title){
     char pathfolder[128];
     snprintf(path, 128, "ux0:/data/TrackPlug/Assets/%s/title.txt", dummy_id);
     snprintf(pathfolder, 128, "ux0:/data/TrackPlug/Assets/%s/", dummy_id);
-    int dfd = ksceIoMkdir(pathfolder,6);
+    ksceIoMkdir(pathfolder,6);
     SceUID fd = ksceIoOpen(path,
         SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
     if (fd < 0) return;
@@ -197,7 +194,7 @@ int event_handler(int pid, int ev, int a3, int a4, int *a5, int a6) {
                 //Write games playtime and reset the variable. If Adrenaline was in XMB, no need
                 //to write it again as it will be handled by the thread.
                 if (!isxmb) write_playtime(adrenaline_id);
-                snprintf(adrenaline_id,12,"pleasePLEASE");
+                snprintf(adrenaline_id,12,"pleasePLEAS");
                 pspemu = 0;
             } else
                 write_playtime(id);

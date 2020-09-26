@@ -3,21 +3,22 @@ System.createDirectory("ux0:/data/TrackPlug/")
 System.createDirectory("ux0:/data/TrackPlug/Records")
 System.createDirectory("ux0:/data/TrackPlug/Config")
 System.createDirectory("ux0:/data/TrackPlug/Assets")
--- Scanning TrackPlug folder
-local tbl = System.listDirectory("ux0:/data/TrackPlug/Records")
-local blacklist = {}
--- Removing blacklisted games
---[[for i, file in pairs(tbl) do
-	local titleid = string.sub(file.name,1,-5)
-    for k, toberemoved in pairs(blacklist) do
-	    if titleid == blacklist[k] then
-            System.deleteFile("ux0:/data/TrackPlug/Records"..file.name)
-        end
-    end
+-- Creating blacklist file if it doesn't exist
+if not System.doesFileExist("ux0:/data/TrackPlug/blacklist.txt") then
+    local blacklist_file = System.openFile("ux0:/data/TrackPlug/blacklist.txt", FCREATE)
+    System.closeFile(blacklist_file)
 end
--- Reset the table
-tbl = System.listDirectory("ux0:/data/TrackPlug/Records")]]--
-
+-- Reading blacklist file
+local blacklist_file = System.openFile("ux0:/data/TrackPlug/blacklist.txt", FREAD)
+local blacklist_fsize = System.sizeFile(blacklist_file)
+local blacklist_var = System.readFile(blacklist_file, blacklist_fsize)
+System.closeFile(blacklist_file)
+-- Removing blacklisted titles
+for line in blacklist_var:gmatch("([^\n]*)\n?") do
+   System.deleteFile("ux0:/data/TrackPlug/Records/" .. line .. ".bin")
+end
+-- Read entries to a table
+local tbl = System.listDirectory("ux0:/data/TrackPlug/Records")
 if tbl == nil then
     tbl = {}
 end
@@ -259,6 +260,7 @@ end
 local sel_val = 128
 local decrease = true
 local freeze = false
+local freeze_blacklist = false
 local mov_y = 0
 local mov_step = 0
 local new_list_idx = nil
@@ -311,7 +313,7 @@ function RenderList()
 		if i ~= list_idx + 5 then
 			Graphics.drawImage(5, y + mov_y, big_tbl[i].icon)
 		end
-		Graphics.debugPrint(150, y + 35 + mov_y, big_tbl[i].title, Color.new(230,140,175))
+		Graphics.debugPrint(150, y + 35 + mov_y, string.gsub(big_tbl[i].title, "\n", " "), Color.new(230,140,175))
 		--Graphics.debugPrint(150, y + 45 + mov_y, "Title ID: " .. big_tbl[i].id, white)
 		--Graphics.debugPrint(150, y + 65 + mov_y, "Region: " .. big_tbl[i].region, white)
 		Graphics.debugPrint(150, y + 65 + mov_y, "Playtime: " .. big_tbl[i].ptime, white)
@@ -319,7 +321,7 @@ function RenderList()
 		if r_idx == 0 then
 			r_idx = #tbl
 		end
-		Graphics.debugPrint(920, y + 100 + mov_y, "#" .. r_idx, white)
+		Graphics.debugPrint(910, y + 100 + mov_y, "#" .. r_idx, white)
 		y = y + 132
 		if real_i <= 0 then
 			i = real_i
@@ -331,23 +333,32 @@ end
 
 -- Main loop
 local f_idx = 1
+local f_idx_2 = 1
 local useless = 0
+local blacklisted_title = "kek"
+local blacklisted_title_id = "kek"
 local oldpad = Controls.read()
 while #tbl > 0 do
 	Graphics.initBlend()
-	Graphics.fillRect(0,960,0,544,Color.new(10,5,15))
+    Graphics.fillRect(0,960,0,544,Color.new(10,5,15))
+    Graphics.fillRect(0,960,4,140,Color.new(20,20,20))
 	wav:init()
 	RenderList()
 	if freeze then
-		showAlarm("Do you want to delete this record permanently? \n" .. tbl[list_idx].title, f_idx)
-	end
+        showAlarm("Do you want to clear playtime of this record? \n" .. string.gsub(tbl[list_idx].title, "\n", " "), f_idx)
+    end
+    if freeze_blacklist then
+        showAlarm("Do you want to blacklist this record? \n" .. blacklisted_title, f_idx_2)
+    end
 	Graphics.termBlend()
 	Screen.flip()
 	Screen.waitVblankStart()
     local pad = Controls.read()
 	if Controls.check(pad, SCE_CTRL_UP) and mov_y == 0 then
 		if freeze then
-			f_idx = 1
+            f_idx = 1
+        elseif freeze_blacklist then
+            f_idx_2 = 1
 		else
 			new_list_idx = list_idx - 1
 			if new_list_idx == 0 then
@@ -357,7 +368,9 @@ while #tbl > 0 do
 		end
 	elseif Controls.check(pad, SCE_CTRL_DOWN) and mov_y == 0 then
 		if freeze then
-			f_idx = 2
+            f_idx = 2
+        elseif freeze_blacklist then
+            f_idx_2 = 2
 		else
 			new_list_idx = list_idx + 1
 			if new_list_idx > #tbl then
@@ -366,17 +379,30 @@ while #tbl > 0 do
 			mov_y = -11
 		end
 	elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) and not freeze then
-		freeze = true
-		f_idx = 1
-	elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
-		freeze = false
-		if f_idx == 1 then -- Delete
-			System.deleteFile("ux0:/data/TrackPlug/Records/" .. tbl[list_idx].id .. ".bin")
+        freeze = true
+        f_idx = 2
+        f_idx_2 = 2
+    elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
+        freeze = false
+        if f_idx == 1 then -- Delete
+            blacklisted_title_id = tbl[list_idx].id
+            blacklisted_title = string.gsub(tbl[list_idx].title, "\n", " ")
+            System.deleteFile("ux0:/data/TrackPlug/Records/" .. tbl[list_idx].id .. ".bin")
+            freeze_blacklist = true
 			table.remove(tbl, list_idx)
 			big_tbl = {}
 			list_idx = list_idx - 1
         end
-	end
+    elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze_blacklist then
+        freeze_blacklist = false
+        if f_idx_2 == 1 then -- Blacklist
+            local file = System.openFile("ux0:/data/TrackPlug/blacklist.txt", FRDWR)
+            local file_size = System.sizeFile(file)
+            local file_var = System.readFile(file, file_size)
+            System.writeFile(file, blacklisted_title_id .. "\n", string.len(blacklisted_title_id) + 1)
+            System.closeFile(file)
+        end
+    end
 	oldpad = pad
 end
 
