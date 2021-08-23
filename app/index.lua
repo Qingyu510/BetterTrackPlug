@@ -8,6 +8,13 @@ if not System.doesFileExist("ux0:/data/TrackPlug/blacklist.txt") then
     local blacklist_file = System.openFile("ux0:/data/TrackPlug/blacklist.txt", FCREATE)
     System.closeFile(blacklist_file)
 end
+--Reading font
+ if System.doesFileExist("app0:/font.ttf") then 
+    fnt = Font.load("app0:/font.ttf") 
+ end
+  if not fnt then
+    fnt = Font.load("sa0:/data/font/pvf/cn0.pvf")
+end
 -- Reading blacklist file
 local blacklist_file = System.openFile("ux0:/data/TrackPlug/blacklist.txt", FREAD)
 local blacklist_fsize = System.sizeFile(blacklist_file)
@@ -37,12 +44,12 @@ function FormatTime(val)
     local minutes = minutes%60
     local res = ""
     if hours > 0 then
-        res = hours .. "h "
+        res = hours .. " 时 "
     end
     if minutes > 0 then
-        res = res .. minutes .. "m "
+        res = res .. minutes .. " 分 "
     end
-    res = res .. seconds .. "s "
+    res = res .. seconds .. " 秒 "
     return res
 end
 
@@ -78,17 +85,17 @@ end
 function getRegion(titleid)
     local regioncode = string.sub(titleid,1,4)
     local prefix = string.sub(regioncode,1,2)
-    local region = "Unknown"
+    local region = "未知"
 
     -- PSV common
     if regioncode == "PCSA" or regioncode == "PCSE" then
-        region = "USA"
+        region = "美国"
     elseif regioncode == "PCSB" or regioncode == "PCSF" then
-        region = "Europe"
+        region = "欧洲"
     elseif regioncode == "PCSC" or regioncode == "PCSG" then
-        region = "Japan"
+        region = "日本"
     elseif regioncode == "PCSD" or regioncode == "PCSH" then
-        region = "Asia"
+        region = "亚洲"
     -- Physical & NP releases (PSV/PSP/PS1)
     elseif prefix == "VC" or prefix == "VL" or
             prefix == "UC" or prefix == "UL" or
@@ -98,19 +105,19 @@ function getRegion(titleid)
         n3 = string.sub(regioncode,3,3)
         n4 = string.sub(regioncode,4,4)
         if n3 == "A" then
-            region = "Asia"
+            region = "亚洲"
         elseif n3 == "C" then
-            region = "China"
+            region = "中国"
         elseif n3 == "E" then
-            region = "Europe"
+            region = "欧洲"
         elseif n3 == "H" then
-            region = "Hong Kong"
+            region = "香港"
         elseif n3 == "J" or n3 == "P" then
-            region = "Japan"
+            region = "日本"
         elseif n3 == "K" then
-            region = "Korea"
+            region = "韩国"
         elseif n3 == "U" then
-            region = "USA"
+            region = "美国"
         end
 
         if n1 == "S" then
@@ -126,11 +133,11 @@ function getRegion(titleid)
             end
         end
     elseif prefix == "PE" then
-        region = "Europe (PS1)"
+        region = "欧洲 (PS1)"
     elseif prefix == "PT" then
-        region = "Asia (PS1)"
+        region = "亚洲 (PS1)"
     elseif prefix == "PU" then
-        region = "USA (PS1)"
+        region = "美国 (PS1)"
     elseif string.sub(titleid,1,6) == "PSPEMU" then
         region = "PSP/PS1"
     end
@@ -166,7 +173,7 @@ for i, file in pairs(tbl) do
         elseif System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
             file.title = extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", titleid)
         else
-            file.title = "Unknown - " .. titleid
+            file.title = "未知 - " .. titleid
         end
         file.id = titleid
         fd = System.openFile("ux0:/data/TrackPlug/Records/" .. file.name, FREAD)
@@ -224,7 +231,7 @@ wav = LoadWave(100,1160, 0.1, 1160)
 -- Internal stuffs
 local list_idx = 1
 local order_idx = 1
-local orders = {"Name", "Playtime"}
+local orders = {"游戏名称", "游戏ID", "游戏区域", "游戏时间"}
 
 -- Ordering titles
 table.sort(tbl, function (a, b) return (a.rtime > b.rtime ) end)
@@ -251,10 +258,10 @@ function showAlarm(title, select_idx)
     end
     local sclr = Color.new(alarm_val, alarm_val, alarm_val)
     Graphics.fillRect(200, 760, 200, 300, grey)
-    Graphics.debugPrint(205, 205, title, yellow)
+    Font.print(fnt, 205, 205, title, yellow)
     Graphics.fillRect(200, 760, 235 + select_idx * 20, 255 + select_idx * 20, sclr)
-    Graphics.debugPrint(205, 255, "Yes", white)
-    Graphics.debugPrint(205, 275, "No", white)
+    Font.print(fnt, 205, 255, "确认", white)
+    Font.print(fnt, 205, 275, "取消", white)
 end
 -- Scroll-list Renderer
 local sel_val = 128
@@ -313,15 +320,15 @@ function RenderList()
 		if i ~= list_idx + 5 then
 			Graphics.drawImage(5, y + mov_y, big_tbl[i].icon)
 		end
-		Graphics.debugPrint(150, y + 35 + mov_y, string.gsub(big_tbl[i].title, "\n", " "), Color.new(230,140,175))
-		--Graphics.debugPrint(150, y + 45 + mov_y, "Title ID: " .. big_tbl[i].id, white)
-		--Graphics.debugPrint(150, y + 65 + mov_y, "Region: " .. big_tbl[i].region, white)
-		Graphics.debugPrint(150, y + 65 + mov_y, "Playtime: " .. big_tbl[i].ptime, white)
+		Font.print(fnt, 150, y + 10 + mov_y, string.gsub(big_tbl[i].title, "\n", " "), Color.new(230,140,175))
+		Font.print(fnt, 150, y + 55 + mov_y, "游戏ID: " .. big_tbl[i].id, white)
+		Font.print(fnt, 150, y + 75 + mov_y, "游戏区域: " .. big_tbl[i].region, white)
+		Font.print(fnt, 150, y + 95 + mov_y, "游玩时间: " .. big_tbl[i].ptime, white)
 		local r_idx = i % #tbl
 		if r_idx == 0 then
 			r_idx = #tbl
 		end
-		Graphics.debugPrint(910, y + 100 + mov_y, "#" .. r_idx, white)
+		Font.print(fnt, 908, y + 100 + mov_y, "# " .. r_idx, white)
 		y = y + 132
 		if real_i <= 0 then
 			i = real_i
@@ -345,10 +352,10 @@ while #tbl > 0 do
 	wav:init()
 	RenderList()
 	if freeze then
-        showAlarm("Do you want to clear playtime of this record? \n" .. string.gsub(tbl[list_idx].title, "\n", " "), f_idx)
+        showAlarm("您确定要永久删除此游戏记录吗？\n" .. string.gsub(tbl[list_idx].title, "\n", " "), f_idx)
     end
     if freeze_blacklist then
-        showAlarm("Do you want to blacklist this record? \n" .. blacklisted_title, f_idx_2)
+        showAlarm("您确定将此游戏记录列入黑名单吗？\n" .. blacklisted_title, f_idx_2)
     end
 	Graphics.termBlend()
 	Screen.flip()
@@ -382,7 +389,7 @@ while #tbl > 0 do
         freeze = true
         f_idx = 2
         f_idx_2 = 2
-    elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze then
+    elseif Controls.check(pad, SCE_CTRL_CIRCLE) and not Controls.check(oldpad, SCE_CTRL_CIRCLE) and freeze then
         freeze = false
         if f_idx == 1 then -- Delete
             blacklisted_title_id = tbl[list_idx].id
@@ -393,7 +400,7 @@ while #tbl > 0 do
 			big_tbl = {}
 			list_idx = list_idx - 1
         end
-    elseif Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and freeze_blacklist then
+    elseif Controls.check(pad, SCE_CTRL_CIRCLE) and not Controls.check(oldpad, SCE_CTRL_CIRCLE) and freeze_blacklist then
         freeze_blacklist = false
         if f_idx_2 == 1 then -- Blacklist
             local file = System.openFile("ux0:/data/TrackPlug/blacklist.txt", FRDWR)
@@ -410,7 +417,7 @@ end
 while true do
     Graphics.initBlend()
     Screen.clear()
-    Graphics.debugPrint(5, 5, "No games tracked yet. You sure you installed the plugin correctly?", white)
+    Font.print(fnt, 5, 5, "尚未追踪到任何游戏，请确认插件是否安装正常。", white)
     Graphics.termBlend()
     Screen.flip()
     Screen.waitVblankStart()
